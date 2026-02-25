@@ -15,7 +15,7 @@ print(LICNECE)
 time.sleep(1)
 
 import os
-import sys
+from sys import exit
 import traceback
 import modules.utilities as utilities
 
