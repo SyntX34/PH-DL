@@ -35,6 +35,8 @@ def download_video(url):
     """Download video using yt-dlp with better error handling and bypass options"""
     try:
         ydl_opts = {
+            'impersonate': 'chrome',
+            'cookiesfrombrowser': None,
             'outtmpl': 'Video Downloads/%(uploader)s - %(title)s - %(id)s.%(ext)s',
             'progress_hooks': [progress_hook],
             'quiet': True,
@@ -51,22 +53,7 @@ def download_video(url):
             'merge_output_format': 'mp4',
             'writethumbnail': False,
             'socket_timeout': 30,
-            'cookiesfrombrowser': None,
         }
-        
-        # Try to enable impersonate if curl-cffi is available
-        if check_curl_cffi():
-            try:
-                test_opts = ydl_opts.copy()
-                test_opts['impersonate'] = 'chrome'
-                with yt_dlp.YoutubeDL(test_opts) as test_ydl:
-                    ydl_opts = test_opts
-                    print(" [+] Using browser impersonation (curl-cffi)")
-            except Exception:
-                print(" [!] Impersonate not available, continuing without")
-        else:
-            print(" [!] curl-cffi not available, impersonate disabled")
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             print(" [+] Extracting video information...")
 
