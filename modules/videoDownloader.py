@@ -27,18 +27,13 @@ def check_curl_cffi():
     """Check if curl-cffi is available for impersonate feature"""
     try:
         import curl_cffi
-        # Check if Chrome impersonation is actually supported
-        from curl_cffi.requests import BrowserType
         return True
-    except (ImportError, Exception):
+    except ImportError:
         return False
 
 def download_video(url):
     """Download video using yt-dlp with better error handling and bypass options"""
     try:
-        # Check if curl-cffi is available for impersonate feature
-        has_curl_cffi = check_curl_cffi()
-        
         ydl_opts = {
             'outtmpl': 'Video Downloads/%(uploader)s - %(title)s - %(id)s.%(ext)s',
             'progress_hooks': [progress_hook],
@@ -59,18 +54,16 @@ def download_video(url):
             'cookiesfrombrowser': None,
         }
         
-        # Only add impersonate if curl-cffi is available
-        # Try to set impersonate, but don't fail if it's not supported
-        if has_curl_cffi:
+        # Try to enable impersonate if curl-cffi is available
+        if check_curl_cffi():
             try:
-                ydl_opts['impersonate'] = 'chrome'
-                # Test if impersonate is actually supported by yt-dlp
-                with yt_dlp.YoutubeDL({'impersonate': 'chrome', 'quiet': True}) as test_ydl:
-                    pass
-                print(" [+] Using browser impersonation (curl-cffi)")
-            except Exception as e:
-                print(f" [!] Impersonate not available: {str(e)}")
-                print(" [!] Continuing without impersonation")
+                test_opts = ydl_opts.copy()
+                test_opts['impersonate'] = 'chrome'
+                with yt_dlp.YoutubeDL(test_opts) as test_ydl:
+                    ydl_opts = test_opts
+                    print(" [+] Using browser impersonation (curl-cffi)")
+            except Exception:
+                print(" [!] Impersonate not available, continuing without")
         else:
             print(" [!] curl-cffi not available, impersonate disabled")
 
