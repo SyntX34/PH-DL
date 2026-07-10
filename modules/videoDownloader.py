@@ -10,6 +10,7 @@ __author__ = "Drillenissen#4268"
 
 import modules.utilities as utilities
 import yt_dlp
+from yt_dlp.networking.impersonate import ImpersonateTarget
 import os
 import shutil
 import traceback
@@ -32,68 +33,41 @@ def check_curl_cffi():
         return False
 
 def download_video(url):
-    """Download video using yt-dlp with better error handling and bypass options"""
+    """Download a video using yt-dlp."""
     try:
         ydl_opts = {
-            'impersonate': 'chrome',
-            'cookiesfrombrowser': None,
-            'outtmpl': 'Video Downloads/%(uploader)s - %(title)s - %(id)s.%(ext)s',
-            'progress_hooks': [progress_hook],
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': False,
-            'ignoreerrors': True,
-            'no_color': True,
-            'geo_bypass': True,
-            'no_check_certificate': True,
-            'retries': 5,
-            'fragment_retries': 10,
-            'http_chunk_size': 1024 * 1024,
-            'format': 'bestvideo+bestaudio/best',
-            'merge_output_format': 'mp4',
-            'writethumbnail': False,
-            'socket_timeout': 30,
+            "impersonate": ImpersonateTarget.from_str("chrome"),
+            "no_cookies": True,
+            "outtmpl": "Video Downloads/%(uploader)s - %(title)s - %(id)s.%(ext)s",
+            "format": "bestvideo+bestaudio/best",
+            "merge_output_format": "mp4",
+            "progress_hooks": [progress_hook],
+            "retries": 10,
+            "fragment_retries": 10,
+            "socket_timeout": 30,
+            "geo_bypass": True,
+            "quiet": False,
+            "no_warnings": False,
         }
+        print(" [+] Starting download...")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            print(" [+] Extracting video information...")
-
-            try:
-                info = ydl.extract_info(url, download=False)
-                if info is None:
-                    raise Exception("Could not extract video information - the video may be unavailable or the site's structure has changed.")
-                
-                print(f" [+] Found: {info.get('title', 'Unknown title')}")
-                
-                if 'formats' in info:
-                    print(" [!] Available formats:")
-                    for fmt in info['formats']:
-                        print(f"  - {fmt['format_id']} ({fmt['ext']}, {fmt.get('vcodec', 'No video codec')}, {fmt.get('acodec', 'No audio codec')})")
-
-                print(" [+] Starting download...")
-                result = ydl.extract_info(url, download=True)
-
-                if result is None:
-                    raise Exception("Download failed")
-
-                return result
-            except yt_dlp.utils.DownloadError as e:
-                error_msg = str(e)
-                if 'HTTP Error 410' in error_msg or '410' in error_msg:
-                    print(f" [!] HTTP 410 Error: This video has been removed or is no longer available.")
-                    print(f" [!] The video may no longer exist on the source website.")
-                else:
-                    print(f" [!] Download error: {error_msg}")
-                return None
-            except Exception as e:
-                print(f" [!] Error during extraction: {str(e)}")
-                return None
-    except Exception as e:
-        error_msg = str(e)
-        if error_msg:
-            print(f" [!] Download error: {error_msg}")
+            result = ydl.extract_info(url, download=True)
+        if result is None:
+            raise Exception("Download failed.")
+        print(f"\n [+] Finished downloading: {result.get('title', 'Unknown title')}")
+        return result
+    except yt_dlp.utils.DownloadError as e:
+        error = str(e)
+        if "410" in error:
+            print(" [!] HTTP 410: The video has been removed or is no longer available.")
+        elif "403" in error:
+            print(" [!] HTTP 403: Access denied.")
         else:
-            print(f" [!] Download error occurred:")
-            traceback.print_exc()
+            print(f" [!] yt-dlp error: {error}")
+        return None
+    except Exception as e:
+        print(f" [!] Download error: {e}")
+        traceback.print_exc()
         return None
 
 def progress_hook(d):
