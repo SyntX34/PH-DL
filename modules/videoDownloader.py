@@ -54,6 +54,7 @@ def download_video(url):
             'merge_output_format': 'mp4',
             'writethumbnail': False,
             'socket_timeout': 30,
+            'cookiesfrombrowser': None,
         }
         
         # Only add impersonate if curl-cffi is available
