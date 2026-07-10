@@ -1,0 +1,42 @@
+# Build outputs
+build/
+dist/
+*.spec
+*.pyc
+*.pyo
+__pycache__/
+
+# User data folders (downloads, videos, pictures)
+files/
+Video Downloads/
+Videos/
+Pictures/
+
+# Environment files
+.env
+.env.local
+.venv/
+venv/
+env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+nul
+
+# Python specific
+*.egg-info/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Logs
+*.log
