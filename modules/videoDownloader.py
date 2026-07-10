@@ -12,6 +12,7 @@ import modules.utilities as utilities
 import yt_dlp
 import os
 import shutil
+import traceback
 from pynotifier import Notification
 
 def sanitize_filename(filename):
@@ -22,9 +23,20 @@ def sanitize_filename(filename):
     filename = filename.strip()
     return filename
 
+def check_curl_cffi():
+    """Check if curl-cffi is available for impersonate feature"""
+    try:
+        import curl_cffi
+        return True
+    except ImportError:
+        return False
+
 def download_video(url):
     """Download video using yt-dlp with better error handling and bypass options"""
     try:
+        # Check if curl-cffi is available for impersonate feature
+        has_curl_cffi = check_curl_cffi()
+        
         ydl_opts = {
             'outtmpl': 'Video Downloads/%(uploader)s - %(title)s - %(id)s.%(ext)s',
             'progress_hooks': [progress_hook],
@@ -41,9 +53,15 @@ def download_video(url):
             'format': 'bestvideo+bestaudio/best',
             'merge_output_format': 'mp4',
             'writethumbnail': False,
-            'impersonate': 'chrome',
             'socket_timeout': 30,
         }
+        
+        # Only add impersonate if curl-cffi is available
+        if has_curl_cffi:
+            ydl_opts['impersonate'] = 'chrome'
+            print(" [+] Using browser impersonation (curl-cffi)")
+        else:
+            print(" [!] curl-cffi not available, impersonate disabled")
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             print(" [+] Extracting video information...")
@@ -79,7 +97,12 @@ def download_video(url):
                 print(f" [!] Error during extraction: {str(e)}")
                 return None
     except Exception as e:
-        print(f" [!] Download error: {str(e)}")
+        error_msg = str(e)
+        if error_msg:
+            print(f" [!] Download error: {error_msg}")
+        else:
+            print(f" [!] Download error occurred:")
+            traceback.print_exc()
         return None
 
 def progress_hook(d):
