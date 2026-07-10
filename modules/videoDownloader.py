@@ -12,9 +12,6 @@ import modules.utilities as utilities
 import yt_dlp
 import os
 import shutil
-import subprocess
-import sys
-import time
 from pynotifier import Notification
 
 def sanitize_filename(filename):
@@ -25,42 +22,8 @@ def sanitize_filename(filename):
     filename = filename.strip()
     return filename
 
-# Track when yt-dlp was last updated to avoid checking every download
-LAST_YTDLP_UPDATE_FILE = os.path.join(os.path.expanduser('~'), '.ph_dl_ytdlp_update')
-UPDATE_INTERVAL_HOURS = 24  # Only check for updates once per day
-
-def check_and_update_ytdlp(force=False):
-    """Check for yt-dlp updates periodically (once per day by default)"""
-    try:
-        # Check if we updated recently
-        if not force and os.path.exists(LAST_YTDLP_UPDATE_FILE):
-            with open(LAST_YTDLP_UPDATE_FILE, 'r') as f:
-                last_update = float(f.read().strip())
-            hours_since = (time.time() - last_update) / 3600
-            if hours_since < UPDATE_INTERVAL_HOURS:
-                return  # Updated recently, skip
-        
-        print(" [+] Checking for yt-dlp updates...")
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode == 0:
-            print(" [+] yt-dlp is up to date")
-            # Record update time
-            with open(LAST_YTDLP_UPDATE_FILE, 'w') as f:
-                f.write(str(time.time()))
-        else:
-            print(" [!] Could not check for updates, continuing with current version")
-    except Exception as e:
-        print(f" [!] Update check failed: {str(e)}")
-
 def download_video(url):
     """Download video using yt-dlp with better error handling and bypass options"""
-    # Try to update yt-dlp periodically to fix known extraction issues
-    check_and_update_ytdlp()
-    
     try:
         ydl_opts = {
             'outtmpl': 'Video Downloads/%(uploader)s - %(title)s - %(id)s.%(ext)s',
@@ -108,8 +71,7 @@ def download_video(url):
                 error_msg = str(e)
                 if 'HTTP Error 410' in error_msg or '410' in error_msg:
                     print(f" [!] HTTP 410 Error: This video has been removed or is no longer available.")
-                    print(f" [!] The site may have changed its structure. Try updating yt-dlp manually:")
-                    print(f" [!]   pip install --upgrade yt-dlp")
+                    print(f" [!] The video may no longer exist on the source website.")
                 else:
                     print(f" [!] Download error: {error_msg}")
                 return None
